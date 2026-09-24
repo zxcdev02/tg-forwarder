@@ -1,1 +1,1 @@
-web: python bot_hosted.py
+web: python main.py
