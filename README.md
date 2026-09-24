@@ -1,88 +1,53 @@
-# Telegram Channel Forwarder — Render.com + UptimeRobot
+# tg-forwarder-bot
 
-Копіює повідомлення з каналу-джерела у твій канал. Працює 24/7 безкоштовно через Flask keep-alive + UptimeRobot.
+Об'єднання двох проєктів в один процес:
 
----
+- **Форвардер** (`forwarder.py`, Telethon-юзербот) — читає `SOURCE_CHANNEL` і пересилає повідомлення (з фільтром за `blacklist.json`) у `TARGET_CHANNEL`.
+- **Керуючий бот** (`control_bot.py`, aiogram) — окремий Telegram-бот, через який ти керуєш форвардером: кнопки в меню, або просто слово.
 
-## 📋 Крок 1 — Отримати API_ID та API_HASH
+Обидва запускаються одночасно з `main.py` (плюс Flask `/ping` для keep-alive на Render/Railway).
 
-1. Зайди на https://my.telegram.org
-2. Логін → "API development tools"
-3. Створи додаток (назва будь-яка)
-4. Скопіюй `App api_id` і `App api_hash`
+## Керування "стоп"
 
----
+Напиши боту (звичайним текстом, без команди) слово:
 
-## 💻 Крок 2 — Отримати SESSION_STRING (на своєму ПК)
+- **стоп** — форвардер одразу перестає щось пересилати (просто чекає, нічого не читає і не постить), поки не отримаєш "старт".
+- **старт** — пересилання відновлюється.
+
+Те саме можна зробити кнопками `/start` → ⏹ Зупинити / ▶️ Запустити.
+Керувати можуть тільки ID з `ALLOWED_USERS` (якщо список порожній — будь-хто, хто знає бота).
+
+## Файли
+
+```
+main.py          — точка входу, запускає forwarder + control_bot + Flask
+forwarder.py      — Telethon: читання каналу-джерела і пересилання
+control_bot.py    — aiogram: меню, /status, слова стоп/старт
+filters.py        — фільтр за blacklist.json (без змін з оригіналу)
+state.py          — спільний стан (пауза, лічильники) між форвардером і ботом
+blacklist.json    — ключові слова/патерни, які не пересилаються
+generate_session.py — одноразовий скрипт для отримання SESSION_STRING
+```
+
+## Налаштування
+
+1. Скопіюй `.env.example` → `.env` і заповни.
+2. `SESSION_STRING` отримуєш локально: `python generate_session.py`.
+3. `BOT_TOKEN` — токен нового (або того самого) бота від @BotFather.
+4. `ALLOWED_USERS` — свій Telegram ID (і всіх, кому можна керувати), через кому.
+
+## Запуск локально
 
 ```bash
-pip install telethon
-python generate_session.py
+pip install -r requirements.txt
+python main.py
 ```
 
-Введи номер телефону у форматі +380XXXXXXXXX і код з Telegram.
-Скопіюй SESSION_STRING — довгий рядок символів.
+## Деплой (Render / Railway)
 
-⚠️ Зберігай SESSION_STRING в секреті!
+Start command: `python main.py`. Змінні середовища — ті самі, що в `.env.example`.
+Для Render не забудь UptimeRobot на `/ping`, як в оригінальному tg-forwarder.
 
----
+## ⚠️ Важливо
 
-## 🐙 Крок 3 — Завантажити код на GitHub
-
-1. Зареєструйся на https://github.com
-2. Створи новий ПРИВАТНИЙ репозиторій
-3. Завантаж всі файли (крім .env і *.session)
-
----
-
-## 🚀 Крок 4 — Деплой на Render.com
-
-1. Зайди на https://render.com → Sign up (через GitHub)
-2. "New +" → "Web Service"
-3. Підключи свій GitHub репозиторій
-4. Налаштування:
-   - Name: tg-forwarder
-   - Environment: Python
-   - Build Command: pip install -r requirements.txt
-   - Start Command: python bot_hosted.py
-5. Перейди в "Environment" і додай змінні:
-
-| Змінна         | Значення              |
-|----------------|-----------------------|
-| API_ID         | твій api_id           |
-| API_HASH       | твій api_hash         |
-| SESSION_STRING | рядок з кроку 2       |
-| SOURCE_CHANNEL | povitryanatrivogaaa   |
-| TARGET_CHANNEL | radarofalarm          |
-
-6. Натисни "Create Web Service"
-7. Після деплою скопіюй URL сервісу (виглядає як https://tg-forwarder-xxxx.onrender.com)
-
----
-
-## ⏰ Крок 5 — UptimeRobot (щоб бот не засипав)
-
-1. Зайди на https://uptimerobot.com → Sign up (безкоштовно, без картки)
-2. "Add New Monitor"
-3. Налаштування:
-   - Monitor Type: HTTP(s)
-   - Friendly Name: TG Forwarder
-   - URL: https://твій-url.onrender.com/ping
-   - Monitoring Interval: Every 5 minutes
-4. Натисни "Create Monitor"
-
-Готово! UptimeRobot буде пінгувати твій бот кожні 5 хвилин — Render не засне ніколи.
-
----
-
-## ✅ Перевірка
-
-У логах Render ти побачиш:
-```
-🌐 Flask keep-alive сервер запущено
-✅ Авторизовано як: Ім'я (@username)
-📥 Джерело: Повітряна тривога
-📤 Ціль: Radar of Alarm
-👂 Слухаю нові повідомлення...
-```
-# tg-forwarder
+В одному з вихідних файлів (`agent-main/main.py`) токен бота був захардкоджений прямо в коді (`BOT_TOKEN = os.getenv("BOT_TOKEN", "8798583621:...")`). Якщо цей файл десь публікувався (GitHub тощо) — токен варто вважати скомпрометованим і **перевипустити через @BotFather** (`/revoke`). У цьому проєкті `BOT_TOKEN` бере тільки зі змінної середовища, дефолту немає.
