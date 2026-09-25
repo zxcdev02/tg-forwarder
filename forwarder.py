@@ -15,7 +15,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 SESSION_STRING = os.environ["SESSION_STRING"]
 
-SOURCE_CHANNEL = int(os.environ.get("SOURCE_CHANNEL", "-1002133315828"))
+SOURCE_CHANNEL = int(os.environ.get("SOURCE_CHANNEL", "-1001875486764"))
 TARGET_CHANNEL = int(os.environ.get("TARGET_CHANNEL", "-1002444819189"))
 CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "30"))
 
