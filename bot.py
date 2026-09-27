@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Конфіг з .env
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
-SOURCE_CHANNEL = os.environ.get("SOURCE_CHANNEL", "monitoring_ukrainian")
+SOURCE_CHANNEL = os.environ.get("SOURCE_CHANNEL", "AerisRimor")
 TARGET_CHANNEL = os.environ.get("TARGET_CHANNEL", "airdefensemonitor")
 
 client = TelegramClient("session", API_ID, API_HASH)
